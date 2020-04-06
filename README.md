@@ -8,12 +8,14 @@ Use to
 * write data to NFC tags
 * send data to other NFC enabled devices
 * receive data from NFC devices
+* send raw commands (ISO 14443-3A, ISO 14443-3A, ISO 14443-4, JIS 6319-4, ISO 15693) to NFC tags
 
 This plugin uses NDEF (NFC Data Exchange Format) for maximum compatibilty between NFC devices, tag types, and operating systems.
 
 Supported Platforms
 -------------------
 * Android
+* [iOS 11](#ios-notes)
 * Windows (includes Windows Phone 8.1, Windows 8.1, Windows 10)
 * BlackBerry 10
 * Windows Phone 8
@@ -59,6 +61,16 @@ BlackBerry 7 support is only available for Cordova 2.x. For applications targeti
 
 See [Getting Started](https://github.com/chariotsolutions/phonegap-nfc/blob/master/doc/GettingStartedCLI.md) and [Getting Started BlackBerry 10](https://github.com/chariotsolutions/phonegap-nfc/blob/master/doc/GettingStartedBlackberry10.md)for more details.
 
+## iOS Notes
+
+Reading NFC NDEF tags is supported on iPhone 7 and iPhone 7 Plus running iOS 11. To enable your app to detect NFC tags, the plugin adds the Near Field Communication Tag Reading capability in your Xcode project. You must build your application with XCode 9. See the [Apple Documentation](http://help.apple.com/xcode/mac/current/#/dev88ff319e7) for more info.
+
+Use [nfc.addNdefListener](#nfcaddndeflistener) to read NDEF NFC tags with iOS. Unfortunately, iOS also requires you to begin a session before scanning NFC tag. The JavaScript API contains two new iOS specific functions [nfc.beginSession](#nfcbeginsession) and [nfc.invalidateSession](#nfcinvalidatesession).
+
+You must call [nfc.beginSession](#nfcbeginsession) before every scan. 
+
+The initial iOS version plugin does not support scanning multiple tags (invalidateAfterFirstRead:FALSE) or setting the alertMessage. If you have use cases or suggestions on the best way to support multi-read or alert messages, open a ticket for discussion.
+
 # NFC
 
 > The nfc object provides access to the device's NFC sensor.
@@ -66,11 +78,8 @@ See [Getting Started](https://github.com/chariotsolutions/phonegap-nfc/blob/mast
 ## Methods
 
 - [nfc.addNdefListener](#nfcaddndeflistener)
-- [nfc.removeNdefListener](#nfcremovendeflistener)
 - [nfc.addTagDiscoveredListener](#nfcaddtagdiscoveredlistener)
-- [nfc.removeTagDiscoveredListener](#nfcremovetagdiscoveredlistener)
 - [nfc.addMimeTypeListener](#nfcaddmimetypelistener)
-- [nfc.removeMimeTypeListener](#nfcremovemimetypelistener)
 - [nfc.addNdefFormatableListener](#nfcaddndefformatablelistener)
 - [nfc.write](#nfcwrite)
 - [nfc.makeReadOnly](#nfcmakereadonly)
@@ -81,6 +90,20 @@ See [Getting Started](https://github.com/chariotsolutions/phonegap-nfc/blob/mast
 - [nfc.stopHandover](#nfcstophandover)
 - [nfc.enabled](#nfcenabled)
 - [nfc.showSettings](#nfcshowsettings)
+- [nfc.beginSession](#nfcbeginsession)
+- [nfc.invalidateSession](#nfcinvalidatesession)
+
+## ReaderMode
+
+- [nfc.readerMode](#nfcreadermode)
+- [nfc.disableReaderMode](#nfcdisablereadermode)
+
+## Tag Technology Functions
+
+- [nfc.connect](#nfcconnect)
+- [nfc.transceive](#nfctransceive)
+- [nfc.close](#nfcclose)
+- [ISO-DEP example](#tag-technology-functions-1)
 
 ## nfc.addNdefListener
 
@@ -104,9 +127,12 @@ For BlackBerry 10, you must configure the type of tags your application will rea
 
 On Android registered [mimeTypeListeners](#nfcaddmimetypelistener) takes precedence over this more generic NDEF listener.
 
+On iOS you must call [beingSession](#nfcbeginsession) before scanning a tag.
+
 ### Supported Platforms
 
 - Android
+- iOS
 - Windows
 - BlackBerry 7
 - BlackBerry 10
@@ -118,6 +144,8 @@ Removes the previously registered event listener for NDEF tags added via `nfc.ad
 
     nfc.removeNdefListener(callback, [onSuccess], [onFailure]);
 
+Removing listeners is not recommended. Instead, consider that your callback can ignore messages you no longer need.
+
 ### Parameters
 
 - __callback__: The previously registered callback.
@@ -127,6 +155,7 @@ Removes the previously registered event listener for NDEF tags added via `nfc.ad
 ### Supported Platforms
 
 - Android
+- iOS
 - Windows
 - BlackBerry 7
 
@@ -154,11 +183,15 @@ This event occurs when any tag is detected by the phone.
 - Windows
 - BlackBerry 7
 
+Note that Windows Phones need the newere NXP PN427 chipset to read non-NDEF tags. That tag will be read, but no tag meta-data is available.
+
 ## nfc.removeTagDiscoveredListener
 
 Removes the previously registered event listener added via `nfc.addTagDiscoveredListener`.
 
     nfc.removeTagDiscoveredListener(callback, [onSuccess], [onFailure]);
+
+Removing listeners is not recommended. Instead, consider that your callback can ignore messages you no longer need.
 
 ### Parameters
 
@@ -201,7 +234,6 @@ On Android, MIME types for filtering should always be lower case. (See [IntentFi
 ### Supported Platforms
 
 - Android
-- Windows
 - BlackBerry 7
 
 ## nfc.removeMimeTypeListener
@@ -209,6 +241,8 @@ On Android, MIME types for filtering should always be lower case. (See [IntentFi
 Removes the previously registered event listener added via `nfc.addMimeTypeListener`.
 
     nfc.removeMimeTypeListener(mimeType, callback, [onSuccess], [onFailure]);
+
+Removing listeners is not recommended. Instead, consider that your callback can ignore messages you no longer need.
 
 ### Parameters
 
@@ -506,7 +540,286 @@ Windows will return **NO_NFC_OR_NFC_DISABLED** when NFC is not present or disabl
 ### Supported Platforms
 
 - Android
+- iOS
 - Windows
+
+## nfc.beginSession
+
+iOS requires you to begin a session before scanning a NFC tag.
+
+    nfc.beginSession(success, failure);
+
+### Description
+
+Function `beginSession` starts the [NFCNDEFReaderSession](https://developer.apple.com/documentation/corenfc/nfcndefreadersession) allowing iOS to scan NFC tags.
+
+### Parameters
+
+- __success__: Success callback function called when the session begins [optional]
+- __failure__: Error callback function, invoked when error occurs. [optional]
+
+### Quick Example
+
+    nfc.beginSession();
+
+### Supported Platforms
+
+- iOS
+
+## nfc.invalidateSession
+
+Invalidate the NFC session.
+
+    nfc.invalidateSession(success, failure);
+
+### Description
+
+Function `invalidateSession` stops the [NFCNDEFReaderSession](https://developer.apple.com/documentation/corenfc/nfcndefreadersession) returning control to your app.
+
+### Parameters
+
+- __success__: Success callback function called when the session in invalidated [optional]
+- __failure__: Error callback function, invoked when error occurs. [optional]
+
+### Quick Example
+
+    nfc.invalidateSession();
+
+### Supported Platforms
+
+- iOS
+
+# Reader Mode Functions
+
+## nfc.readerMode
+
+Read NFC tags sending the tag data to the success callback.
+
+    nfc.readerMode(flags, readCallback, errorCallback);
+
+### Description
+
+In reader mode, when a NFC tags is read, the results are returned to read callback as a tag object. Note that the normal event listeners are *not* used in reader mode. The callback receives the tag object *without* the event wrapper.
+
+    {
+        "isWritable": true,
+        "id": [4, 96, 117, 74, -17, 34, -128],
+        "techTypes": ["android.nfc.tech.IsoDep", "android.nfc.tech.NfcA", "android.nfc.tech.Ndef"],
+        "type": "NFC Forum Type 4",
+        "canMakeReadOnly": false,
+        "maxSize": 2046,
+        "ndefMessage": [{
+            "id": [],
+            "type": [116, 101, 120, 116, 47, 112, 103],
+            "payload": [72, 101, 108, 108, 111, 32, 80, 104, 111, 110, 101, 71, 97, 112],
+            "tnf": 2
+        }]
+    }
+
+Foreground dispatching and peer-to-peer functions are disabled when reader mode is enabled.
+
+The flags control which tags are scanned. One benefit to reader mode, is the system sounds can be disabled when a NFC tag is scanned by adding the nfc.FLAG_READER_NO_PLATFORM_SOUNDS flag. See Android's [NfcAdapter.enableReaderMode()](https://developer.android.com/reference/android/nfc/NfcAdapter#enableReaderMode(android.app.Activity,%20android.nfc.NfcAdapter.ReaderCallback,%20int,%20android.os.Bundle)) documentation for more info on the flags.
+
+
+### Parameters
+
+- __flags__:  Flags indicating poll technologies and other optional parameters
+- __readCallback__: The callback that is called when a NFC tag is scanned.
+- __errorCallback__: The callback that is called when NFC is disabled or missing.
+
+### Quick Example
+
+    nfc.readerMode(
+        nfc.FLAG_READER_NFC_A | nfc.FLAG_READER_NO_PLATFORM_SOUNDS, 
+        nfcTag => console.log(JSON.stringify(nfcTag)),
+        error => console.log('NFC reader mode failed', error)
+    );
+
+### Supported Platforms
+
+- Android
+
+## nfc.disableReaderMode
+
+Disable NFC reader mode.
+
+    nfc.disableNfcReaderMode(successCallback, errorCallback);
+
+### Description
+
+Disable NFC reader mode.
+
+### Parameters
+
+- __successCallback__: The callback that is called when a NFC reader mode is disabled.
+- __errorCallback__: The callback that is called when NFC reader mode can not be disabled.
+
+### Quick Example
+
+    nfc.disableReaderMode(
+        () => console.log('NFC reader mode disabled'),
+        error => console.log('Error disabling NFC reader mode', error)
+    )
+
+### Supported Platforms
+
+- Android
+
+
+# Tag Technology Functions
+
+The tag technology functions provide access to I/O operations on a tag. Connect to a tag, send commands with transceive, close the tag. See the [Android TagTechnology](https://developer.android.com/reference/android/nfc/tech/TagTechnology) and implementations like [IsoDep](https://developer.android.com/reference/android/nfc/tech/IsoDep) and [NfcV](https://developer.android.com/reference/android/nfc/tech/NfcV) for more details. These new APIs are promise based rather than using callbacks.
+
+#### ISO-DEP (ISO 14443-4) Example
+
+    const DESFIRE_SELECT_PICC = '00 A4 04 00 07 D2 76 00 00 85 01 00';
+    const DESFIRE_SELECT_AID = '90 5A 00 00 03 AA AA AA 00'
+
+    async function handleDesfire(nfcEvent) {
+        
+        const tagId = nfc.bytesToHexString(nfcEvent.tag.id);
+        console.log('Processing', tagId);
+
+        try {
+            await nfc.connect('android.nfc.tech.IsoDep', 500);
+            console.log('connected to', tagId);
+            
+            let response = await nfc.transceive(DESFIRE_SELECT_PICC);
+            ensureResponseIs('9000', response);
+            
+            response = await nfc.transceive(DESFIRE_SELECT_AID);
+            ensureResponseIs('9100', response);
+            // 91a0 means the requested application not found
+
+            alert('Selected application AA AA AA');
+
+            // more transcieve commands go here
+            
+        } catch (error) {
+            alert(error);
+        } finally {
+            await nfc.close();
+            console.log('closed');
+        }
+
+    }
+
+    function ensureResponseIs(expectedResponse, buffer) {
+        const responseString = util.arrayBufferToHexString(buffer);
+        if (expectedResponse !== responseString) {
+            const error = 'Expecting ' + expectedResponse + ' but received ' + responseString;
+            throw error;
+        }
+    }
+
+    function onDeviceReady() {
+        nfc.addTagDiscoveredListener(handleDesfire);
+    }
+
+    document.addEventListener('deviceready', onDeviceReady, false);
+
+## nfc.connect
+
+Connect to the tag and enable I/O operations to the tag from this TagTechnology object.
+
+    nfc.connect(tech);
+
+    nfc.connect(tech, timeout);
+
+### Description
+
+Function `connect` enables I/O operations to the tag from this TagTechnology object. `nfc.connect` should be called after receiving a nfcEvent from the `addTagDiscoveredListener`. Only one TagTechnology object can be connected to a Tag at a time.
+
+See Android's [TagTechnology.connect()](https://developer.android.com/reference/android/nfc/tech/TagTechnology.html#connect()) for more info.
+
+### Parameters
+
+- __tech__: The tag technology e.g. android.nfc.tech.IsoDep
+- __timeout__: The transceive(byte[]) timeout in milliseconds [optional]
+
+### Returns
+
+ - Promise when the connection is successful
+
+### Quick Example
+
+    nfc.addTagDiscoveredListener(function(nfcEvent) {
+        nfc.connect('android.nfc.tech.IsoDep', 500).then(
+            () => console.log('connected to', nfc.bytesToHexString(nfcEvent.tag.id)),
+            (error) => console.log('connection failed', error)
+        );
+    })
+
+### Supported Platforms
+
+- Android
+
+## nfc.transceive
+
+Send raw command to the tag and receive the response.
+
+    nfc.transceive(data);
+
+### Description
+
+Function `transceive` sends raw commands to the tag and receives the response. `nfc.connect` must be called before calling `transceive`. Data passed to transceive can be a hex string representation of bytes or an ArrayBuffer. The response is returned as an ArrayBuffer in the promise. 
+
+See Android's documentation [IsoDep.transceive()](https://developer.android.com/reference/android/nfc/tech/IsoDep.html#transceive(byte[])), [NfcV.transceive()](https://developer.android.com/reference/android/nfc/tech/NfcV.html#transceive(byte[])), [MifareUltralight.transceive()](https://developer.android.com/reference/android/nfc/tech/MifareUltralight.html#transceive(byte[])) for more info.
+
+### Parameters
+
+- __data__: a string of hex data or an ArrayBuffer
+
+### Returns
+
+ - Promise with the response data as an ArrayBuffer
+
+### Quick Example
+
+    // Promise style
+    nfc.transceive('90 5A 00 00 03 AA AA AA 00').then(
+        response => console.log(util.arrayBufferToHexString(response)),
+        error => console.log('Error selecting DESFire application')
+    )
+
+    // async await
+    const response = await nfc.transceive('90 5A 00 00 03 AA AA AA 00');
+    console.log('response =',util.arrayBufferToHexString(response));
+
+### Supported Platforms
+
+- Android
+
+## nfc.close
+
+Close TagTechnology connection.
+
+    nfc.close();
+
+### Description
+
+Function `close` disabled I/O operations to the tag from this TagTechnology object, and releases resources.
+
+See Android's [TagTechnology.close()](https://developer.android.com/reference/android/nfc/tech/TagTechnology.html#close()) for more info.
+
+### Parameters
+
+ - none
+
+### Returns
+
+ - Promise when the connection is successfully closed
+
+### Quick Example
+
+    nfc.transceive().then(
+        () => console.log('connection closed'),
+        (error) => console.log('error closing connection', error);
+    )
+
+### Supported Platforms
+
+- Android
 
 # NDEF
 
@@ -588,7 +901,7 @@ The tag contents are platform dependent.
 
 `id` and `techTypes` may be included when scanning a tag on Android.  `serialNumber` may be included on BlackBerry 7.
 
-`id` and `serialNumber` are different names for the same value.  `id` is typically displayed as a hex string `ndef.bytesToHexString(tag.id)`.
+`id` and `serialNumber` are different names for the same value.  `id` is typically displayed as a hex string `nfc.bytesToHexString(tag.id)`.
 
 Windows, Windows Phone 8, and BlackBerry 10 read the NDEF information from a tag, but do not have access to the tag id or other meta data like capacity, read-only status or tag technologies.
 
@@ -663,7 +976,7 @@ You can also log the tag contents in your event handlers.  `console.log(JSON.str
 
 ## Non-NDEF Tags
 
-Only Android and BlackBerry 7 can read data from non-NDEF NFC tags.
+Only Android and BlackBerry 7 can read data from non-NDEF NFC tags. Newer Windows Phones with NXP PN427 chipset can read non-NDEF tags, but can not get any tag meta data.
 
 ## Mifare Classic Tags
 
@@ -795,7 +1108,7 @@ Create a new project
     cordova platform add android
     cordova plugin add ../phonegap-nfc
     cordova plugin add ../phonegap-nfc/tests
-    cordova plugin add http://git-wip-us.apache.org/repos/asf/cordova-plugin-test-framework.git
+    cordova plugin add https://github.com/apache/cordova-plugin-test-framework.git
 
 Change the start page in `config.xml`
 
@@ -833,7 +1146,7 @@ License
 
 The MIT License
 
-Copyright (c) 2011-2015 Chariot Solutions
+Copyright (c) 2011-2017 Chariot Solutions
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
