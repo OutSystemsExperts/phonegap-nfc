@@ -438,6 +438,9 @@ var nfc = {
     },
 
     write: function (ndefMessage, win, fail) {
+        if (cordova.platformId === "ios"){
+            cordova.exec(win, fail, "NfcPlugin", "beginSession", []);
+        }
         cordova.exec(win, fail, "NfcPlugin", "writeTag", [ndefMessage]);
     },
 
