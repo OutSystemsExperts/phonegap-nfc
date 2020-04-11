@@ -119,7 +119,8 @@
                 
         <source-file src="src/ios/NFCTapPlugin.swift" />
         <source-file src="src/ios/ISO15Reader.swift" />
-        <source-file src="src/ios/NFCNDEFDelegate.swift" />
+        <source-file src="src/ios/NFCNDEFReaderDelegate.swift" />
+        <source-file src="src/ios/NFCNDEFWriterDelegate.swift" />
         <source-file src="src/ios/AppDelegate+NFC.swift" />
         <source-file src="src/ios/NFCPlugin-Bridging-Header.h" />
 
