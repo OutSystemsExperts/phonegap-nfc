@@ -433,6 +433,9 @@ var nfc = {
     },
 
     addNdefFormatableListener: function (callback, win, fail) {
+        if (cordova.platformId === "ios"){
+            cordova.exec(win, fail, "NfcPlugin", "beginSession", []);
+        }
         document.addEventListener("ndef-formatable", callback, false);
         cordova.exec(win, fail, "NfcPlugin", "registerNdefFormatable", []);
     },
