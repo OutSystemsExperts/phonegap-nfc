@@ -13,7 +13,8 @@ import CoreNFC
 // Main class handling the plugin functionalities.
 @objc(NfcPlugin) class NfcPlugin: CDVPlugin {
     var nfcController: NSObject? // ST25DVReader downCast as NSObject for iOS version compatibility
-    var ndefController: NFCNDEFDelegate?
+    var ndefReaderController: NFCNDEFReaderDelegate?
+    var ndefWriterController: NFCNDEFWriterDelegate?
     var lastError: Error?
     var channelCommand: CDVInvokedUrlCommand?
     var isListeningNDEF = false
@@ -159,12 +160,12 @@ import CoreNFC
         DispatchQueue.main.async {
             print("Begin NDEF reading session")
 
-            if self.ndefController == nil {
+            if self.ndefReaderController == nil {
                 var message: String?
                 if command.arguments.count != 0 {
                     message = command.arguments[0] as? String ?? ""
                 }
-                self.ndefController = NFCNDEFDelegate(completed: {
+                self.ndefReaderController = NFCNDEFReaderDelegate(completed: {
                     (response: [AnyHashable: Any]?, error: Error?) -> Void in
                     DispatchQueue.main.async {
                         print("handle NDEF")
@@ -175,7 +176,8 @@ import CoreNFC
                             // self.sendSuccess(command: command, result: response ?? "")
                             self.sendThroughChannel(jsonDictionary: response ?? [:])
                         }
-                        self.ndefController = nil
+                        self.ndefReaderController = nil
+                        self.ndefWriterController = nil
                     }
                 }, message: message)
             }
@@ -187,12 +189,12 @@ import CoreNFC
         DispatchQueue.main.async {
             print("Begin NDEF reading session")
 
-            if self.ndefController == nil {
+            if self.ndefWriterController == nil {
                 var message: String?
                 if command.arguments.count != 0 {
                     message = command.arguments[0] as? String ?? ""
                 }
-                self.ndefController = NFCNDEFDelegate(completed: {
+                self.ndefWriterController = NFCNDEFWriterDelegate(completed: {
                     (response: [AnyHashable: Any]?, error: Error?) -> Void in
                     DispatchQueue.main.async {
                         print("handle NDEF")
@@ -203,15 +205,11 @@ import CoreNFC
                             // self.sendSuccess(command: command, result: response ?? "")
                             self.sendThroughChannel(jsonDictionary: response ?? [:])
                         }
-                        self.ndefController = nil
+                        self.ndefWriterController = nil
                     }
                 }, message: message, textToWrite: "hey! how are you?")
             }
         }
-    }
-    
-    func beginSessionToWrite(command: CDVInvokedUrlCommand){
-        
     }
 
     @objc(invalidateSession:)
@@ -221,7 +219,7 @@ import CoreNFC
             return
         }
         DispatchQueue.main.async {
-            guard let session = self.ndefController?.session else {
+            guard let session = self.ndefReaderController?.session else {
                 self.sendError(command: command, result: "no session to terminate")
                 return
             }
