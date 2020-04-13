@@ -14,11 +14,11 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     
     var session: NFCNDEFReaderSession?
     var completed: ([AnyHashable : Any]?, Error?) -> ()
-    var textToWrite: String
+    var ndefMessage: NSArray
     
-    init(completed: @escaping ([AnyHashable: Any]?, Error?) -> (), message: String?, textToWrite: String) {
+    init(completed: @escaping ([AnyHashable: Any]?, Error?) -> (), message: String?, ndefMessage: NSArray) {
         self.completed = completed
-        self.textToWrite = textToWrite;
+        self.ndefMessage = ndefMessage;
         super.init()
         
         self.session = NFCNDEFReaderSession.init(delegate: self, queue: nil, invalidateAfterFirstRead: false)
@@ -32,9 +32,9 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     
     @available(iOS 13.0, *)
     func readerSession(_ session: NFCNDEFReaderSession, didDetect tags: [NFCNDEFTag]) {
-        if (self.textToWrite == ""){
+        /*if (self.textToWrite == ""){
             return;
-        }
+        }*/
         // 1
        guard tags.count == 1 else {
            session.invalidate(errorMessage: "Can not write to more than one tag.")
@@ -68,23 +68,48 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
                     string: "no value passed",
                     locale: Locale.init(identifier: "en")
                 )!*/
+                var payloads = [NFCNDEFPayload]();
                 
-                var payloadData = Data([0x02,0x65,0x6E]) // 0x02 + 'en' = Locale Specifier
-                payloadData.append(self.textToWrite.data(using: .utf8)!)
+                for ndefMess in self.ndefMessage{
+                    let payload = jsonToNdefRecords(ndefMessage: ndefMess as! NSDictionary);
+                    payloads.append(payload);
+                }
                 
-                let payload = NFCNDEFPayload.init(
+                let messge = NFCNDEFMessage.init(
+                   records: payloads
+               )
+                
+               // var ola = Data((self.ndefMessage as? [Int64])!)
+                /*let payload = NFCNDEFPayload.init(
                     format: NFCTypeNameFormat.nfcWellKnown,
                     type: "T".data(using: .utf8)!,
                     identifier: Data.init(count: 0),
                     payload: payloadData,
                     chunkSize: 0
+                )*/
+                
+                /*let textPayload1 = NFCNDEFPayload.wellKnownTypeURIPayload(string: "https://github.com/agoncalvesos")
+                let textPayload2 = NFCNDEFPayload.wellKnownTypeURIPayload(string: "https://github.com/chariotsolutions")
+                
+                let payload1 = NFCNDEFPayload.init(
+                    format: NFCTypeNameFormat.nfcWellKnown,
+                    type: "T".data(using: .utf8)!,
+                    identifier: Data.init(count: 0),
+                    payload: textPayload1!.payload,
+                    chunkSize: 0
+                )
+                
+                let payload2 = NFCNDEFPayload.init(
+                    format: NFCTypeNameFormat.nfcWellKnown,
+                    type: "T".data(using: .utf8)!,
+                    identifier: Data.init(count: 0),
+                    payload: textPayload2!.payload,
+                    chunkSize: 0
                 )
                 
                 let messge = NFCNDEFMessage.init(
-                    records: [
-                        payload
-                    ]
-                )
+                    records: [payload1, payload2]
+                )*/
                // 4
                currentTag.writeNDEF(messge) { error in
                    

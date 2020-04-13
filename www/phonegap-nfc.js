@@ -417,9 +417,6 @@ var nfc = {
     },
 
     addMimeTypeListener: function (mimeType, callback, win, fail) {
-        if (cordova.platformId === "ios"){
-            cordova.exec(win, fail, "NfcPlugin", "beginSession", []);
-        }
         document.addEventListener("ndef-mime", callback, false);
         cordova.exec(win, fail, "NfcPlugin", "registerMimeType", [mimeType]);
     },

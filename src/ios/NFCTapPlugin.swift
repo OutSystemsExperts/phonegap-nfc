@@ -205,12 +205,14 @@ import CoreNFC
         }*/
         
         DispatchQueue.main.async {
-            print("Begin NDEF reading session")
+            print("Begin NDEF writing session")
 
             if self.ndefWriterController == nil {
                 var message: String?
+                var ndefMessage: NSArray?
                 if command.arguments.count != 0 {
-                    message = command.arguments[0] as? String ?? ""
+                    //message = command.arguments[0] as? String ?? ""
+                    ndefMessage = command.arguments[0] as? NSArray
                 }
                 self.ndefWriterController = NFCNDEFWriterDelegate(completed: {
                     (response: [AnyHashable: Any]?, error: Error?) -> Void in
@@ -226,7 +228,7 @@ import CoreNFC
                         }
                         self.ndefWriterController = nil
                     }
-                }, message: message, textToWrite: "how are you?")
+                }, message: message, ndefMessage: ndefMessage!)
             }
         }
     }
