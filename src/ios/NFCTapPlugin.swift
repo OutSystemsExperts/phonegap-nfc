@@ -142,18 +142,18 @@ import CoreNFC
         }
     }
 
-    @objc(removeNdef:)
-    func removeNdef(command: CDVInvokedUrlCommand) {
-        print("removeNdef")
-        isListeningNDEF = false;
-        sendSuccess(command: command, result: "NDEF Listener is off")
-    }
-
     @objc(registerNdef:)
     func registerNdef(command: CDVInvokedUrlCommand) {
         print("Registered NDEF Listener")
         isListeningNDEF = true // Flag for the AppDelegate
         sendSuccess(command: command, result: "NDEF Listener is on")
+    }
+    
+    @objc(removeNdef:)
+    func removeNdef(command: CDVInvokedUrlCommand) {
+        print("removeNdef")
+        isListeningNDEF = false;
+        sendSuccess(command: command, result: "NDEF Listener is off")
     }
 
     @objc(registerMimeType:)
@@ -193,6 +193,17 @@ import CoreNFC
     
     @objc(writeTag:)
     func writeTag(command: CDVInvokedUrlCommand) {
+        
+        if command.arguments.count <= 0 {
+            self.sendError(command: command, result: "WriteTag parameter error")
+            return
+        }
+
+        /*guard let data: NSData = command.arguments[0] as? NSData else {
+            self.sendError(command: command, result: "Tried to write empty string")
+            return
+        }*/
+        
         DispatchQueue.main.async {
             print("Begin NDEF reading session")
 
@@ -214,7 +225,7 @@ import CoreNFC
                         }
                         self.ndefWriterController = nil
                     }
-                }, message: message, textToWrite: "hey! how are you?")
+                }, message: message, textToWrite: "how are you?")
             }
         }
     }

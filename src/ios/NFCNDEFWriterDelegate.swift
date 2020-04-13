@@ -14,7 +14,7 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     
     var session: NFCNDEFReaderSession?
     var completed: ([AnyHashable : Any]?, Error?) -> ()
-    var textToWrite: String?
+    var textToWrite: String
     
     init(completed: @escaping ([AnyHashable: Any]?, Error?) -> (), message: String?, textToWrite: String) {
         self.completed = completed
@@ -64,14 +64,25 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
                case .readWrite:
 
                 // 2
-                let textPayload = NFCNDEFPayload.wellKnownTypeTextPayload(
-                    string: self.textToWrite ?? "no value passed",
+                /*let textPayload = NFCNDEFPayload.wellKnownTypeTextPayload(
+                    string: "no value passed",
                     locale: Locale.init(identifier: "en")
-                )!
+                )!*/
+                
+                var payloadData = Data([0x02,0x65,0x6E]) // 0x02 + 'en' = Locale Specifier
+                payloadData.append(self.textToWrite.data(using: .utf8)!)
+                
+                let payload = NFCNDEFPayload.init(
+                    format: NFCTypeNameFormat.nfcWellKnown,
+                    type: "T".data(using: .utf8)!,
+                    identifier: Data.init(count: 0),
+                    payload: payloadData,
+                    chunkSize: 0
+                )
                 
                 let messge = NFCNDEFMessage.init(
                     records: [
-                        textPayload
+                        payload
                     ]
                 )
                    // 4
