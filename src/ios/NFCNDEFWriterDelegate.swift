@@ -85,16 +85,18 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
                         payload
                     ]
                 )
-                   // 4
-                   currentTag.writeNDEF(messge) { error in
-                       
-                       if error != nil {
-                           session.invalidate(errorMessage: "Failed to write message.")
-                       } else {
-                           session.alertMessage = "Successfully wrote data to tag!"
-                           session.invalidate()
-                       }
+               // 4
+               currentTag.writeNDEF(messge) { error in
+                   
+                   if error != nil {
+                        self.completed(nil, "Failed to write message" as? Error)
+                        session.invalidate(errorMessage: "Failed to write message.")
+                   } else {
+                        self.completed(nil, nil)
+                        session.alertMessage = "Successfully wrote data to tag!"
+                        session.invalidate()
                    }
+               }
                    
                @unknown default:   session.invalidate(errorMessage: "Unknown status of tag.")
                }
@@ -103,10 +105,7 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     }
     
     func readerSession(_: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        for message in messages {
-            self.fireNdefEvent(message: message)
-        }
-        self.session?.invalidate()
+        //do nothing
     }
     
     func readerSession(_: NFCNDEFReaderSession, didInvalidateWithError _: Error) {
@@ -115,10 +114,5 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     
     func readerSessionDidBecomeActive(_: NFCNDEFReaderSession) {
         print("NDEF Reader session active")
-    }
-    
-    func fireNdefEvent(message: NFCNDEFMessage) {
-        let response = message.ndefMessageToJSON()
-        completed(response, nil)
     }
 }
