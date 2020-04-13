@@ -221,7 +221,8 @@ import CoreNFC
                             self.sendError(command: command, result: error!.localizedDescription)
                         } else {
                             // self.sendSuccess(command: command, result: response ?? "")
-                            self.sendThroughChannel(jsonDictionary: response ?? [:])
+                            //self.sendThroughChannel(jsonDictionary: response ?? [:])
+                            self.sendSuccess(command: command, result: true)
                         }
                         self.ndefWriterController = nil
                     }
