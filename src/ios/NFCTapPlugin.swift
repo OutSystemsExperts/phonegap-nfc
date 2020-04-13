@@ -142,6 +142,13 @@ import CoreNFC
         }
     }
 
+    @objc(removeNdef:)
+    func removeNdef(command: CDVInvokedUrlCommand) {
+        print("removeNdef")
+        isListeningNDEF = false;
+        sendSuccess(command: command, result: "NDEF Listener is off")
+    }
+
     @objc(registerNdef:)
     func registerNdef(command: CDVInvokedUrlCommand) {
         print("Registered NDEF Listener")
