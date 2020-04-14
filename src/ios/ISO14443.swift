@@ -84,7 +84,6 @@ class ISO14443: NSObject, NFCTagReaderSessionDelegate {
         returnedJSON.setValue("ndef", forKey: "type")
         returnedJSON.setObject([UInt8](tag.identifier), forKey: "id" as NSString)
         returnedJSON.setValue(isWritable, forKey: "isWritable")
-        //returnedJSON.setValue("nf1", forKey: "type2")
         returnedJSON.setObject(wrapper, forKey: "tag" as NSString)
 
         return returnedJSON as! [AnyHashable : Any]

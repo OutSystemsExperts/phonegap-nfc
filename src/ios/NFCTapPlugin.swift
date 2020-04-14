@@ -16,7 +16,7 @@ import CoreNFC
     var nfcController: NSObject? // ST25DVReader downCast as NSObject for iOS version compatibility
     var ndefReaderController: NFCNDEFReaderDelegate?
     var ndefWriterController: NFCNDEFWriterDelegate?
-    var readerTest: Readertest?
+    var readerTest: ISO14443?
     var lastError: Error?
     var channelCommand: CDVInvokedUrlCommand?
     var isListeningNDEF = false
@@ -174,7 +174,7 @@ import CoreNFC
                if command.arguments.count != 0 {
                    message = command.arguments[0] as? String ?? ""
                }
-                self.readerTest = Readertest(completed: {
+                self.readerTest = ISO14443(completed: {
                     (response: [AnyHashable: Any]?, error: Error?) -> Void in
                     DispatchQueue.main.async {
                         print("handle NDEF")
