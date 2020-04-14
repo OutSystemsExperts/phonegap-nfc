@@ -868,8 +868,8 @@ require('cordova/channel').onCordovaReady.subscribe(function() {
         var e = document.createEvent('Events');
         e.initEvent(message.type);
         e.tag = message.tag;
-        e.id = message.id;
-        e.isWritable = message.isWritable;
+        e.tag.id = message.id;
+        e.tag.isWritable = message.isWritable;
         document.dispatchEvent(e);
     }
   }
