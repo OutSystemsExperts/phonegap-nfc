@@ -25,25 +25,32 @@ extension AppDelegate {
             ndefMessage.records[0].typeNameFormat != .empty else {
                 return false
             }
-            let nfcPluginInstance: NfcPlugin = self.viewController.getCommandInstance("NfcPlugin") as! NfcPlugin
-            var resolved: Bool = false;
-            NSLog(nfcPluginInstance.debugDescription);
-            
-            DispatchQueue.global().async {
-                let waitingTimeInterval: Double = 0.1;
-                print("<NFC> Did start timeout")
-                for _ in 1...2000 { // 5?s timeout
-                    if ( !nfcPluginInstance.isListeningNDEF ) {
-                    Thread.sleep(forTimeInterval: waitingTimeInterval)
-                    } else {
-                        let jsonDictionary = ndefMessage.ndefMessageToJSON()
-                        nfcPluginInstance.sendThroughChannel(jsonDictionary: jsonDictionary)
-                        resolved = true
-                        return
-                    }
+            if #available(iOS 13.0, *) {
+                let nfcPluginInstance: NfcPlugin = self.viewController.getCommandInstance("NfcPlugin") as! NfcPlugin
+                
+                var resolved: Bool = false;
+                    NSLog(nfcPluginInstance.debugDescription);
+                    
+                    DispatchQueue.global().async {
+                        let waitingTimeInterval: Double = 0.1;
+                        print("<NFC> Did start timeout")
+                        for _ in 1...2000 { // 5?s timeout
+                            if ( !nfcPluginInstance.isListeningNDEF ) {
+                            Thread.sleep(forTimeInterval: waitingTimeInterval)
+                            } else {
+                                let jsonDictionary = ndefMessage.ndefMessageToJSON()
+                                nfcPluginInstance.sendThroughChannel(jsonDictionary: jsonDictionary)
+                                resolved = true
+                                return
+                            }
+                        }
                 }
-        }
-            return resolved
+                    return resolved
+                
+            } else {
+                return false;
+            }
+            
         } else {
             return false
         }

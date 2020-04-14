@@ -11,10 +11,12 @@ import UIKit
 import CoreNFC
 
 // Main class handling the plugin functionalities.
+@available(iOS 13.0, *)
 @objc(NfcPlugin) class NfcPlugin: CDVPlugin {
     var nfcController: NSObject? // ST25DVReader downCast as NSObject for iOS version compatibility
     var ndefReaderController: NFCNDEFReaderDelegate?
     var ndefWriterController: NFCNDEFWriterDelegate?
+    var readerTest: Readertest?
     var lastError: Error?
     var channelCommand: CDVInvokedUrlCommand?
     var isListeningNDEF = false
@@ -161,8 +163,36 @@ import CoreNFC
         print("Registered Mi Listener")
         sendSuccess(command: command, result: "NDEF Listener is on")
     }
-
+    
     @objc(beginSession:)
+    func beginSession(command: CDVInvokedUrlCommand) {
+       DispatchQueue.main.async {
+           print("Begin NDEF reading session")
+
+           if self.readerTest == nil {
+               var message: String?
+               if command.arguments.count != 0 {
+                   message = command.arguments[0] as? String ?? ""
+               }
+                self.readerTest = Readertest(completed: {
+                    (response: [AnyHashable: Any]?, error: Error?) -> Void in
+                    DispatchQueue.main.async {
+                        print("handle NDEF")
+                        if error != nil {
+                            self.lastError = error
+                            self.sendError(command: command, result: error!.localizedDescription)
+                        } else {
+                            // self.sendSuccess(command: command, result: response ?? "")
+                            self.sendThroughChannel(jsonDictionary: response ?? [:])
+                        }
+                        self.readerTest = nil
+                    }
+                }, message: message)
+           }
+       }
+    }
+    
+    /*@objc(beginSession:)
     func beginSession(command: CDVInvokedUrlCommand) {
         DispatchQueue.main.async {
             print("Begin NDEF reading session")
@@ -189,7 +219,7 @@ import CoreNFC
                 }, message: message)
             }
         }
-    }
+    }*/
     
     @objc(writeTag:)
     func writeTag(command: CDVInvokedUrlCommand) {
