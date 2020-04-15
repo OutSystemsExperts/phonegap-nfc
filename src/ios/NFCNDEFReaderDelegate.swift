@@ -1,6 +1,7 @@
 //
 //  NFCNDEFReaderDelegate.swift
-//  NFC
+//
+//  Created by André Gonçalves on 13/04/2020.
 //
 
 import Foundation
@@ -23,27 +24,7 @@ class NFCNDEFReaderDelegate: NSObject, NFCNDEFReaderSessionDelegate {
         self.session!.begin()
     }
     
-    @available(iOS 13.0, *)
-    func readerSession(_ session: NFCNDEFReaderSession, didDetect tags: [NFCNDEFTag]) {
-        if case let NFCTag.miFare(tag) = tags.first!{
-            print(tag.identifier);
-        }
-    }
-    
-    /*@available(iOS 13.0, *)
-    private func tagReaderSession(_ session: NFCTagReaderSession, didDetect tags: [NFCTag]) {
-      if case let NFCTag.miFare(tag) = tags.first! {
-        print(tag.identifier as NSData)
-      }
-    }*/
-    
-    
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        /*let foundTags = session.value(forKey: "_tagsRead") as? [AnyHashable]
-        let tag = foundTags?[0] as? NSObject
-        let uid = tag?.value(forKey: "_tagID") as? Data
-        */
-        let foundTags = session.value(forKey: "_tagsRead");
         for message in messages {
             self.fireNdefEvent(message: message)
         }

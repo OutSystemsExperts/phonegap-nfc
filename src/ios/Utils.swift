@@ -37,17 +37,17 @@ extension NFCNDEFMessage {
 
 @available(iOS 13.0, *)
 func jsonToNdefRecords(ndefMessage: NSDictionary) -> NFCNDEFPayload{
-    var id = ndefMessage.object(forKey: "id")
+    //let id = ndefMessage.object(forKey: "id")
     let tnf = ndefMessage.object(forKey: "tnf") as! UInt8
-    let payload2 = ndefMessage.object(forKey: "payload") as! NSArray
+    
+    let payload = ndefMessage.object(forKey: "payload") as! NSArray
+    let dataPayload = Data.init(payload as! [UInt8])
+    
     let type = ndefMessage.object(forKey: "type") as! NSArray
-    var dataType = Data.init();
-    dataType.append(contentsOf: type as! [UInt8])
-    var dataPayload = Data.init()
-    dataPayload.append(contentsOf: payload2 as! [UInt8])
+    let dataType = Data.init(bytes: type as! [UInt8])
+    
     let message = NFCNDEFPayload.init(
         format: NFCTypeNameFormat.init(rawValue: tnf)!,
-        //type: "T".data(using: .utf8)!,
         type: dataType,
         identifier: Data.init(count: 0),
         payload: dataPayload,

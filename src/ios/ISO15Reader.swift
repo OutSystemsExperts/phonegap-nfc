@@ -1,9 +1,7 @@
 //
 //  IOS15Reader.swift
-//  NFC
 //
-//  Created by dev@iotize.com on 23/07/2019.
-//  Copyright © 2019 dev@iotize.com. All rights reserved.
+//  Created by André Gonçalves on 13/04/2020.
 //
 
 import UIKit

@@ -1,9 +1,7 @@
 //
 //  NFCTapPlugin.swift
-//  NFC
 //
-//  Created by dev@iotize.com on 23/07/2019.
-//  Copyright © 2019 dev@iotize.com. All rights reserved.
+//  Created by André Gonçalves on 13/04/2020.
 //
 
 import Foundation
@@ -11,12 +9,11 @@ import UIKit
 import CoreNFC
 
 // Main class handling the plugin functionalities.
-@available(iOS 13.0, *)
 @objc(NfcPlugin) class NfcPlugin: CDVPlugin {
     var nfcController: NSObject? // ST25DVReader downCast as NSObject for iOS version compatibility
-    var ndefReaderController: NFCNDEFReaderDelegate?
-    var ndefWriterController: NFCNDEFWriterDelegate?
-    var readerTest: ISO14443?
+    var nfcTagReaderController: NSObject? // NFCTagReader downCast as NSObject for iOS version compatibility - Used to read tags on iOS >= 13
+    var ndefReaderController: NFCNDEFReaderDelegate? //Used to read NDEF messages on iOS < 13
+    var ndefWriterController: NFCNDEFWriterDelegate? //Used to write tags
     var lastError: Error?
     var channelCommand: CDVInvokedUrlCommand?
     var isListeningNDEF = false
@@ -166,15 +163,15 @@ import CoreNFC
     
     @objc(beginSession:)
     func beginSession(command: CDVInvokedUrlCommand) {
-       DispatchQueue.main.async {
-           print("Begin NDEF reading session")
-
-           if self.readerTest == nil {
-               var message: String?
-               if command.arguments.count != 0 {
-                   message = command.arguments[0] as? String ?? ""
-               }
-                self.readerTest = ISO14443(completed: {
+        DispatchQueue.main.async {
+            print("Begin NDEF reading session")
+            
+            var alertMessage: String?
+            if command.arguments.count != 0 {
+               alertMessage = command.arguments[0] as? String ?? ""
+            }
+            if #available(iOS 13.0, *) {
+                self.nfcTagReaderController = NFCTagReaderDelegate(completed: {
                     (response: [AnyHashable: Any]?, error: Error?) -> Void in
                     DispatchQueue.main.async {
                         print("handle NDEF")
@@ -185,23 +182,9 @@ import CoreNFC
                             // self.sendSuccess(command: command, result: response ?? "")
                             self.sendThroughChannel(jsonDictionary: response ?? [:])
                         }
-                        self.readerTest = nil
                     }
-                }, message: message)
-           }
-       }
-    }
-    
-    /*@objc(beginSession:)
-    func beginSession(command: CDVInvokedUrlCommand) {
-        DispatchQueue.main.async {
-            print("Begin NDEF reading session")
-
-            if self.ndefReaderController == nil {
-                var message: String?
-                if command.arguments.count != 0 {
-                    message = command.arguments[0] as? String ?? ""
-                }
+                }, alertMessage: alertMessage)
+            } else {
                 self.ndefReaderController = NFCNDEFReaderDelegate(completed: {
                     (response: [AnyHashable: Any]?, error: Error?) -> Void in
                     DispatchQueue.main.async {
@@ -216,10 +199,10 @@ import CoreNFC
                         self.ndefReaderController = nil
                         self.ndefWriterController = nil
                     }
-                }, message: message)
+                }, message: alertMessage)
             }
-        }
-    }*/
+       }
+    }
     
     @objc(writeTag:)
     func writeTag(command: CDVInvokedUrlCommand) {
@@ -228,20 +211,14 @@ import CoreNFC
             self.sendError(command: command, result: "WriteTag parameter error")
             return
         }
-
-        /*guard let data: NSData = command.arguments[0] as? NSData else {
-            self.sendError(command: command, result: "Tried to write empty string")
-            return
-        }*/
         
         DispatchQueue.main.async {
             print("Begin NDEF writing session")
 
             if self.ndefWriterController == nil {
-                var message: String?
+                let alertMessage = ""
                 var ndefMessage: NSArray?
                 if command.arguments.count != 0 {
-                    //message = command.arguments[0] as? String ?? ""
                     ndefMessage = command.arguments[0] as? NSArray
                 }
                 self.ndefWriterController = NFCNDEFWriterDelegate(completed: {
@@ -258,7 +235,7 @@ import CoreNFC
                         }
                         self.ndefWriterController = nil
                     }
-                }, message: message, ndefMessage: ndefMessage!)
+                }, alertMessage: alertMessage, ndefMessage: ndefMessage!)
             }
         }
     }
@@ -270,13 +247,21 @@ import CoreNFC
             return
         }
         DispatchQueue.main.async {
-            guard let session = self.ndefReaderController?.session else {
-                self.sendError(command: command, result: "no session to terminate")
-                return
+            if #available(iOS 13.0, *) {
+                guard let session = (self.nfcTagReaderController as! NFCTagReaderDelegate).session else {
+                    self.sendError(command: command, result: "no session to terminate")
+                    return
+                }
+                session.invalidate()
+            } else {
+               guard let session = self.ndefReaderController?.session else {
+                   self.sendError(command: command, result: "no session to terminate")
+                   return
+               }
+               session.invalidate()
             }
-
-            session.invalidate()
             self.nfcController = nil
+            self.nfcTagReaderController = nil;
             self.sendSuccess(command: command, result: "Session Ended!")
         }
     }

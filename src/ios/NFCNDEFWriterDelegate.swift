@@ -1,9 +1,7 @@
 //
 //  NFCNDEFDelegate.swift
-//  NFC
 //
-//  Created by dev@iotize.com on 05/08/2019.
-//  Copyright © 2019 dev@iotize.com. All rights reserved.
+//  Created by André Gonçalves on 13/04/2020.
 //
 
 import Foundation
@@ -16,7 +14,7 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     var completed: ([AnyHashable : Any]?, Error?) -> ()
     var ndefMessage: NSArray
     
-    init(completed: @escaping ([AnyHashable: Any]?, Error?) -> (), message: String?, ndefMessage: NSArray) {
+    init(completed: @escaping ([AnyHashable: Any]?, Error?) -> (), alertMessage: String?, ndefMessage: NSArray) {
         self.completed = completed
         self.ndefMessage = ndefMessage;
         super.init()
@@ -26,7 +24,7 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
             self.completed(nil, "NFC is not available" as? Error);
             return
         }
-        self.session!.alertMessage = message ?? ""
+        self.session!.alertMessage = alertMessage ?? ""
         self.session!.begin()
     }
     

@@ -1,9 +1,8 @@
 //
 //  AppDelegate+NFC.swift
-//  PhoneGap NFC - Cordova Plugin
 //
-//  Copyright © 2019 dev@iotize.com. All rights reserved.
-
+//  Created by André Gonçalves on 13/04/2020.
+//
 import CoreNFC
 
 extension AppDelegate {
@@ -25,31 +24,26 @@ extension AppDelegate {
             ndefMessage.records[0].typeNameFormat != .empty else {
                 return false
             }
-            if #available(iOS 13.0, *) {
-                let nfcPluginInstance: NfcPlugin = self.viewController.getCommandInstance("NfcPlugin") as! NfcPlugin
+            let nfcPluginInstance: NfcPlugin = self.viewController.getCommandInstance("NfcPlugin") as! NfcPlugin
+            
+            var resolved: Bool = false;
+                NSLog(nfcPluginInstance.debugDescription);
                 
-                var resolved: Bool = false;
-                    NSLog(nfcPluginInstance.debugDescription);
-                    
-                    DispatchQueue.global().async {
-                        let waitingTimeInterval: Double = 0.1;
-                        print("<NFC> Did start timeout")
-                        for _ in 1...2000 { // 5?s timeout
-                            if ( !nfcPluginInstance.isListeningNDEF ) {
-                            Thread.sleep(forTimeInterval: waitingTimeInterval)
-                            } else {
-                                let jsonDictionary = ndefMessage.ndefMessageToJSON()
-                                nfcPluginInstance.sendThroughChannel(jsonDictionary: jsonDictionary)
-                                resolved = true
-                                return
-                            }
+                DispatchQueue.global().async {
+                    let waitingTimeInterval: Double = 0.1;
+                    print("<NFC> Did start timeout")
+                    for _ in 1...2000 { // 5?s timeout
+                        if ( !nfcPluginInstance.isListeningNDEF ) {
+                        Thread.sleep(forTimeInterval: waitingTimeInterval)
+                        } else {
+                            let jsonDictionary = ndefMessage.ndefMessageToJSON()
+                            nfcPluginInstance.sendThroughChannel(jsonDictionary: jsonDictionary)
+                            resolved = true
+                            return
                         }
-                }
-                    return resolved
-                
-            } else {
-                return false;
+                    }
             }
+            return resolved
             
         } else {
             return false
