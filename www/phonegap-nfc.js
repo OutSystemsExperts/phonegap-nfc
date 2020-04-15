@@ -870,6 +870,7 @@ require('cordova/channel').onCordovaReady.subscribe(function() {
         e.tag = message.tag;
         e.tag.id = message.id;
         e.tag.isWritable = message.isWritable;
+        e.tag.techTypes = message.techTypes;
         document.dispatchEvent(e);
     }
   }

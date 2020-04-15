@@ -56,6 +56,7 @@ class NFCTagReaderDelegate: NSObject, NFCTagReaderSessionDelegate {
         
         session.connect(to: tag) { (error: Error?) in
             let defTag = self.getTagInstance(tag: tag);
+            
             if (defTag != nil){
                 defTag!.queryNDEFStatus { (status: NFCNDEFStatus, capacity: Int, error: Error?) in
                     guard error == nil else {
@@ -88,7 +89,7 @@ class NFCTagReaderDelegate: NSObject, NFCTagReaderSessionDelegate {
         returnedJSON.setObject(getIdentifier(defTag: tag), forKey: "id" as NSString)
         returnedJSON.setValue(isWritable, forKey: "isWritable")
         returnedJSON.setObject(wrapper, forKey: "tag" as NSString)
-
+        returnedJSON.setObject([self.getFamily(defTag: tag)], forKey: "techTypes" as NSString)
         return returnedJSON as! [AnyHashable : Any]
     }
     
@@ -105,6 +106,22 @@ class NFCTagReaderDelegate: NSObject, NFCTagReaderSessionDelegate {
             return [UInt8](defTagIso7816.identifier)
         }
         return [UInt8]();
+    }
+    
+    //https://developer.apple.com/documentation/corenfc/nfcmifarefamily
+    func getFamily(defTag: NFCNDEFTag) -> String{
+        if let defTagMiFare = defTag as? NFCMiFareTag {
+            if NFCMiFareFamily.unknown == defTagMiFare.mifareFamily {
+                return "Type A"
+            } else if NFCMiFareFamily.ultralight == defTagMiFare.mifareFamily {
+                return "MIFARE Ultralight"
+            } else if NFCMiFareFamily.plus == defTagMiFare.mifareFamily {
+                return "MIFARE Plus"
+            } else {
+                return "MIFARE DESFire"
+            }
+        }
+        return "";
     }
     
     func getTagInstance(tag: NFCTag) -> NFCNDEFTag?{
