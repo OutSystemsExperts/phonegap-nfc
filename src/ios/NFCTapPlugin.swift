@@ -206,7 +206,6 @@ import CoreNFC
     
     @objc(writeTag:)
     func writeTag(command: CDVInvokedUrlCommand) {
-        
         if #available(iOS 13.0, *) {
             if command.arguments.count <= 0 {
                 self.sendError(command: command, result: "WriteTag parameter error")
@@ -312,11 +311,11 @@ import CoreNFC
 
     @objc(enabled:)
     func enabled(command: CDVInvokedUrlCommand) {
-        guard #available(iOS 11.0, *) else {
+        if #available(iOS 11.0, *) {
+            let enabled = NFCNDEFReaderSession.readingAvailable
+            sendSuccess(command: command, result: enabled)
+        } else {
             sendError(command: command, result: "enabled is only available on iOS 11+")
-            return
         }
-        let enabled = NFCReaderSession.readingAvailable
-        sendSuccess(command: command, result: enabled)
     }
 }
