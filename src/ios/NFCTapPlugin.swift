@@ -238,10 +238,10 @@ import CoreNFC
                             self.ndefWriterController = nil
                         }
                     }, alertMessage: alertMessage, ndefMessage: ndefMessage!)
-                } else {
-                    self.sendError(command: command, result: "Write is only available on iOS 13+")
                 }
             }
+        } else {
+            self.sendError(command: command, result: "Write is only available on iOS 13+")
         }
     }
 
