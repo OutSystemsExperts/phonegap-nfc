@@ -58,28 +58,30 @@ class NFCTagReaderDelegate: NSObject, NFCTagReaderSessionDelegate {
             let defTag = self.getTagInstance(tag: tag);
             
             if (defTag != nil){
-                defTag!.queryNDEFStatus { (status: NFCNDEFStatus, capacity: Int, error: Error?) in
-                    guard error == nil else {
+                defTag!.queryNDEFStatus { (status: NFCNDEFStatus, maxSize: Int, error: Error?) in
+                    /*guard error == nil else {
                         session.invalidate(errorMessage: "Could not query status of tag.")
                         return
-                    }
+                    }*/
                     
                     defTag!.readNDEF { (message: NFCNDEFMessage?, error: Error?) in
-                        if (message != nil){
-                            self.fireNdefEvent(message: self.prepareTag(tag: defTag!, message: message!, isWritable: status == .readWrite))
+                        //if (message != nil){
+                        self.fireNdefEvent(message: self.prepareTag(tag: defTag!, message: message, isWritable: status == .readWrite, maxSize: maxSize))
                             self.session?.invalidate()
-                        }
+                        //}
                     }
                 }
             }
         }
     }
     
-    func prepareTag(tag: NFCNDEFTag, message: NFCNDEFMessage, isWritable: Bool) -> [AnyHashable: Any] {
+    func prepareTag(tag: NFCNDEFTag, message: NFCNDEFMessage?, isWritable: Bool, maxSize: Int) -> [AnyHashable: Any] {
         let array = NSMutableArray()
-        for record in message.records {
-            let recordDictionary = message.ndefToNSDictionary(record: record)
-            array.add(recordDictionary)
+        if (message != nil){
+            for record in message!.records {
+                let recordDictionary = message!.ndefToNSDictionary(record: record)
+                array.add(recordDictionary)
+            }
         }
         let wrapper = NSMutableDictionary()
         wrapper.setObject(array, forKey: "ndefMessage" as NSString)
@@ -88,6 +90,7 @@ class NFCTagReaderDelegate: NSObject, NFCTagReaderSessionDelegate {
         returnedJSON.setValue("ndef", forKey: "type")
         returnedJSON.setObject(getIdentifier(defTag: tag), forKey: "id" as NSString)
         returnedJSON.setValue(isWritable, forKey: "isWritable")
+        returnedJSON.setValue(maxSize, forKey: "maxSize")
         returnedJSON.setObject(wrapper, forKey: "tag" as NSString)
         returnedJSON.setObject([self.getFamily(defTag: tag)], forKey: "techTypes" as NSString)
         return returnedJSON as! [AnyHashable : Any]

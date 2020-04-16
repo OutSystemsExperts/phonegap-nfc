@@ -7,6 +7,7 @@
 import Foundation
 import CoreNFC
 
+@available(iOS 13.0, *)
 class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
     
     
@@ -28,7 +29,6 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
         self.session!.begin()
     }
     
-    @available(iOS 13.0, *)
     func readerSession(_ session: NFCNDEFReaderSession, didDetect tags: [NFCNDEFTag]) {
         /*if (self.textToWrite == ""){
             return;
@@ -76,15 +76,6 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
                 let messge = NFCNDEFMessage.init(
                    records: payloads
                )
-                
-               // var ola = Data((self.ndefMessage as? [Int64])!)
-                /*let payload = NFCNDEFPayload.init(
-                    format: NFCTypeNameFormat.nfcWellKnown,
-                    type: "T".data(using: .utf8)!,
-                    identifier: Data.init(count: 0),
-                    payload: payloadData,
-                    chunkSize: 0
-                )*/
                 
                 /*let textPayload1 = NFCNDEFPayload.wellKnownTypeURIPayload(string: "https://github.com/agoncalvesos")
                 let textPayload2 = NFCNDEFPayload.wellKnownTypeURIPayload(string: "https://github.com/chariotsolutions")

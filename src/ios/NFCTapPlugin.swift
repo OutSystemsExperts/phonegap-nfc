@@ -13,7 +13,7 @@ import CoreNFC
     var nfcController: NSObject? // ST25DVReader downCast as NSObject for iOS version compatibility
     var nfcTagReaderController: NSObject? // NFCTagReader downCast as NSObject for iOS version compatibility - Used to read tags on iOS >= 13
     var ndefReaderController: NFCNDEFReaderDelegate? //Used to read NDEF messages on iOS < 13
-    var ndefWriterController: NFCNDEFWriterDelegate? //Used to write tags
+    var ndefWriterController: NSObject? //Used to write tags
     var lastError: Error?
     var channelCommand: CDVInvokedUrlCommand?
     var isListeningNDEF = false
@@ -207,35 +207,40 @@ import CoreNFC
     @objc(writeTag:)
     func writeTag(command: CDVInvokedUrlCommand) {
         
-        if command.arguments.count <= 0 {
-            self.sendError(command: command, result: "WriteTag parameter error")
-            return
-        }
+        if #available(iOS 13.0, *) {
+            if command.arguments.count <= 0 {
+                self.sendError(command: command, result: "WriteTag parameter error")
+                return
+            }
         
-        DispatchQueue.main.async {
-            print("Begin NDEF writing session")
+            DispatchQueue.main.async {
+                print("Begin NDEF writing session")
 
-            if self.ndefWriterController == nil {
-                let alertMessage = ""
-                var ndefMessage: NSArray?
-                if command.arguments.count != 0 {
-                    ndefMessage = command.arguments[0] as? NSArray
-                }
-                self.ndefWriterController = NFCNDEFWriterDelegate(completed: {
-                    (response: [AnyHashable: Any]?, error: Error?) -> Void in
-                    DispatchQueue.main.async {
-                        print("handle NDEF")
-                        if error != nil {
-                            self.lastError = error
-                            self.sendError(command: command, result: error!.localizedDescription)
-                        } else {
-                            // self.sendSuccess(command: command, result: response ?? "")
-                            //self.sendThroughChannel(jsonDictionary: response ?? [:])
-                            self.sendSuccess(command: command, result: true)
-                        }
-                        self.ndefWriterController = nil
+                if self.ndefWriterController == nil {
+                    let alertMessage = ""
+                    var ndefMessage: NSArray?
+                    if command.arguments.count != 0 {
+                        ndefMessage = command.arguments[0] as? NSArray
                     }
-                }, alertMessage: alertMessage, ndefMessage: ndefMessage!)
+                    
+                    self.ndefWriterController = NFCNDEFWriterDelegate(completed: {
+                        (response: [AnyHashable: Any]?, error: Error?) -> Void in
+                        DispatchQueue.main.async {
+                            print("handle NDEF")
+                            if error != nil {
+                                self.lastError = error
+                                self.sendError(command: command, result: error!.localizedDescription)
+                            } else {
+                                // self.sendSuccess(command: command, result: response ?? "")
+                                //self.sendThroughChannel(jsonDictionary: response ?? [:])
+                                self.sendSuccess(command: command, result: true)
+                            }
+                            self.ndefWriterController = nil
+                        }
+                    }, alertMessage: alertMessage, ndefMessage: ndefMessage!)
+                } else {
+                    self.sendError(command: command, result: "Write is only available on iOS 13+")
+                }
             }
         }
     }
