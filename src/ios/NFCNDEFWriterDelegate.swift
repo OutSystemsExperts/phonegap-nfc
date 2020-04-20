@@ -100,16 +100,16 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
                     records: [payload1, payload2]
                 )*/
                // 4
-               currentTag.writeNDEF(messge) { error in
+                currentTag.writeNDEF(messge) { error in
                    
-                   if error != nil {
-                        self.completed(nil, "Failed to write message" as? Error)
+                    if error != nil {
+                        self.completed(nil, error)
                         session.invalidate(errorMessage: "Failed to write message.")
-                   } else {
+                    } else {
                         self.completed(nil, nil)
                         session.alertMessage = "Successfully wrote data to tag!"
                         session.invalidate()
-                   }
+                    }
                }
                    
                @unknown default:   session.invalidate(errorMessage: "Unknown status of tag.")
@@ -122,8 +122,8 @@ class NFCNDEFWriterDelegate: NSObject, NFCNDEFReaderSessionDelegate {
         //do nothing
     }
     
-    func readerSession(_: NFCNDEFReaderSession, didInvalidateWithError _: Error) {
-        completed(nil, "NFCNDEFReaderSession error" as? Error)
+    func readerSession(_: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
+        completed(nil, error)
     }
     
     func readerSessionDidBecomeActive(_: NFCNDEFReaderSession) {
