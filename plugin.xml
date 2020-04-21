@@ -3,7 +3,7 @@
     xmlns="http://www.phonegap.com/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="phonegap-nfc"
-    version="0.7.3">
+    version="0.7.3-OS">
 
     <name>NFC</name>
 
@@ -116,7 +116,7 @@
             <preference name="deployment-target" value="11" />
             <preference name="SwiftVersion" value="4" />
         </config-file>
-                
+
         <source-file src="src/ios/NFCTapPlugin.swift" />
         <source-file src="src/ios/ISO15Reader.swift" />
         <source-file src="src/ios/NFCTagReaderDelegate.swift" />
