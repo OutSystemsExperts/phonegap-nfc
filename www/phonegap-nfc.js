@@ -1,6 +1,5 @@
-/*jshint  bitwise: false, camelcase: false, quotmark: false, unused: vars */
-/*global cordova, console */
-"use strict";
+/*jshint  bitwise: false, camelcase: false, quotmark: false, unused: vars, esversion: 6, browser: true*/
+/*global cordova, console, require */
 
 function handleNfcFromIntentFilter() {
 
@@ -271,9 +270,9 @@ var ndef = {
      *
      * @see NFC Data Exchange Format (NDEF) http://www.nfc-forum.org/specs/spec_list/
      */
-    decodeMessage: function (bytes) {
+    decodeMessage: function (ndefBytes) {
 
-        var bytes = bytes.slice(0), // clone since parsing is destructive
+        var bytes = ndefBytes.slice(0), // clone since parsing is destructive
             ndef_message = [],
             tnf_byte,
             header,
@@ -495,6 +494,56 @@ var nfc = {
     // iOS only
     invalidateSession: function (win, fail) {
         cordova.exec(win, fail, "NfcPlugin", "invalidateSession", []);
+    },
+
+    connect: function(tech, timeout) {
+        return new Promise(function(resolve, reject) {
+            cordova.exec(resolve, reject, 'NfcPlugin', 'connect', [tech, timeout]);
+        });
+    },
+
+    close: function() {
+        return new Promise(function(resolve, reject) {
+            cordova.exec(resolve, reject, 'NfcPlugin', 'close', []);
+        });
+    },
+
+    // data - ArrayBuffer or string of hex data for transcieve
+    // the results of transcieve are returned in the promise success as an ArrayBuffer
+    transceive: function(data) {
+        return new Promise(function(resolve, reject) {
+
+            var buffer;
+            if (typeof data === 'string') {
+                buffer = util.hexStringToArrayBuffer(data);
+            } else if (data instanceof ArrayBuffer) {
+                buffer = data;
+            } else if (data instanceof Uint8Array) {
+                buffer = data.buffer;
+            } else {
+                reject("Expecting an ArrayBuffer or String");
+            }
+
+            cordova.exec(resolve, reject, 'NfcPlugin', 'transceive', [buffer]);
+        });
+    },
+
+    // Android NfcAdapter.enableReaderMode flags
+    FLAG_READER_NFC_A: 0x1,
+    FLAG_READER_NFC_B: 0x2,
+    FLAG_READER_NFC_F: 0x4,
+    FLAG_READER_NFC_V: 0x8,
+    FLAG_READER_NFC_BARCODE: 0x10,
+    FLAG_READER_SKIP_NDEF_CHECK: 0x80,
+    FLAG_READER_NO_PLATFORM_SOUNDS: 0x100,
+
+    // Android NfcAdapter.enabledReaderMode
+    readerMode: function(flags, readCallback, errorCallback) {
+        cordova.exec(readCallback, errorCallback, 'NfcPlugin', 'readerMode', [flags]);
+    },
+
+    disableReaderMode: function(successCallback, errorCallback) {
+        cordova.exec(successCallback, errorCallback, 'NfcPlugin', 'disableReaderMode', []);
     }
 
 };
@@ -642,6 +691,58 @@ var util = {
             return (nfc.bytesToString(record.type) === recordType);
         }
         return false;
+    },
+
+    /**
+     * Convert an ArrayBuffer to a hex string
+     *
+     * @param {ArrayBuffer} buffer
+     * @returns {srting} - hex representation of bytes e.g. 000407AF
+     */
+    arrayBufferToHexString: function(buffer) {
+        function toHexString(byte) {
+            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+        }
+        var typedArray = new Uint8Array(buffer);
+        var array = Array.from(typedArray);  // need to convert to [] so our map result is not typed
+        var parts = array.map(function(i) { return toHexString(i) });
+
+        return parts.join('');
+    },
+
+    /**
+     * Convert a hex string to an ArrayBuffer.
+     *
+     * @param {string} hexString - hex representation of bytes
+     * @return {ArrayBuffer} - The bytes in an ArrayBuffer.
+     */
+    hexStringToArrayBuffer: function(hexString) {
+
+        // remove any delimiters - space, dash, or colon
+        hexString = hexString.replace(/[\s-:]/g, '');
+
+        // remove the leading 0x
+        hexString = hexString.replace(/^0x/, '');
+
+        // ensure even number of characters
+        if (hexString.length % 2 != 0) {
+            console.log('WARNING: expecting an even number of characters in the hexString');
+        }
+
+        // check for some non-hex characters
+        var bad = hexString.match(/[G-Z\s]/i);
+        if (bad) {
+            console.log('WARNING: found non-hex characters', bad);
+        }
+
+        // split the string into pairs of octets
+        var pairs = hexString.match(/[\dA-F]{2}/gi);
+
+        // convert the octets to integers
+        var ints = pairs.map(function(s) { return parseInt(s, 16) });
+
+        var array = new Uint8Array(ints);
+        return array.buffer;
     }
 
 };
@@ -656,7 +757,12 @@ var textHelper = {
             utf16 = (data[0] & 0x80) !== 0; // assuming UTF-16BE
 
         // TODO need to deal with UTF in the future
-        // console.log("lang " + languageCode + (utf16 ? " utf16" : " utf8"));
+        if (utf16) {
+            console.log('WARNING: utf-16 data may not be handled properly for', languageCode);
+        }
+        // Use TextDecoder when we have enough browser support
+        // new TextDecoder('utf-8').decode(data.slice(languageCodeLength + 1));
+        // new TextDecoder('utf-16').decode(data.slice(languageCodeLength + 1));
 
         return util.bytesToString(data.slice(languageCodeLength + 1));
     },
@@ -749,3 +855,24 @@ window.nfc = nfc;
 window.ndef = ndef;
 window.util = util;
 window.fireNfcTagEvent = fireNfcTagEvent;
+
+// This channel receives nfcEvent data from native code
+// and fires JavaScript events.
+require('cordova/channel').onCordovaReady.subscribe(function() {
+  require('cordova/exec')(success, null, 'NfcPlugin', 'channel', []);
+  function success(message) {
+    if (!message.type) {
+        console.log(message);
+    } else {
+        console.log("Received NFC data, firing '" + message.type + "' event");
+        var e = document.createEvent('Events');
+        e.initEvent(message.type);
+        e.tag = message.tag;
+        e.tag.id = message.id;
+        e.tag.isWritable = message.isWritable;
+        e.tag.maxSize = message.maxSize;
+        e.tag.techTypes = message.techTypes;
+        document.dispatchEvent(e);
+    }
+  }
+});
