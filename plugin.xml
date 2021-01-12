@@ -104,7 +104,7 @@
     </platform>
 
     <platform name="ios">
-        <dependency id="cordova-plugin-add-swift-support@1.7.2"/>
+        <dependency id="cordova-plugin-add-swift-support@2.0.2"/>
         <js-module src="www/phonegap-nfc.js" name="NFC">
             <runs />
         </js-module>
